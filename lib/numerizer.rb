@@ -9,10 +9,9 @@
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 require 'strscan'
 
-class Numerizer
+class Numerize
 
   DIRECT_NUMS = [
     ['eleven', '11'],
@@ -110,20 +109,23 @@ class Numerizer
     string = string.dup
 
     # preprocess
-    string.gsub!(/ +|([^\d])-([^\d])/, '\1 \2') # will mutilate hyphenated-words
+    #string.gsub!(/ +|([^\d])-([^\d])/, '\1 \2') # will mutilate hyphenated-words
 
     # easy/direct replacements
     (DIRECT_NUMS + SINGLE_NUMS).each do |dn|
       string.gsub!(/(^|\W)#{dn[0]}(?=$|\W)/i, '\1<num>' + dn[1].to_s)
+      string.gsub!(/(\d)-<num>/, '\1 <num>')
     end
 
     # ten, twenty, etc.
     TEN_PREFIXES.each do |tp|
       SINGLE_NUMS.each do |dn|
         string.gsub!(/(^|\W)#{tp[0]}#{dn[0]}(?=$|\W)/i, '\1<num>' + (tp[1] + dn[1]).to_s)
+        string.gsub!(/(\d)-<num>/, '\1 <num>')
       end
       SINGLE_ORDINALS.each do |dn|
         string.gsub!(/(^|\W)#{tp[0]}(\s)?#{dn[0]}(?=$|\W)/i, '\1<num>' + (tp[1] + dn[1]).to_s + dn[0][-2, 2])
+        string.gsub!(/(\d)-<num>/, '\1 <num>')
       end
       string.gsub!(/(^|\W)#{tp[0]}(?=$|\W)/i, '\1<num>' + tp[1].to_s)
     end
@@ -131,7 +133,7 @@ class Numerizer
     # handle fractions
     FRACTIONS.each do |tp|
       string.gsub!(/a #{tp[0]}(?=$|\W)/i, '<num>1/' + tp[1].to_s)
-      string.gsub!(/\s#{tp[0]}(?=$|\W)/i, '/' + tp[1].to_s)
+      string.gsub!(/[\s|-]#{tp[0]}(?=$|\W)/i, '/' + tp[1].to_s)
     end
 
     (DIRECT_ORDINALS + SINGLE_ORDINALS).each do |on|
