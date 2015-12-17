@@ -12,7 +12,6 @@
 require 'strscan'
 
 class Numerizer
-
   DIRECT_NUMS = [
     ['eleven', '11'],
     ['twelve', '12'],
@@ -54,11 +53,13 @@ class Numerizer
   ]
 
   BIG_PREFIXES = [
+    ['baker\'?s dozens?', 13],
+    ['dozens?', 12],
     ['hundred', 100],
     ['thousand', 1000],
     ['million', 1_000_000],
     ['billion', 1_000_000_000],
-    ['trillion', 1_000_000_000_000],
+    ['trillion', 1_000_000_000_000]
   ]
 
   FRACTIONS = [
@@ -102,19 +103,22 @@ class Numerizer
     ['sixtieth', '60'],
     ['seventieth', '70'],
     ['eightieth', '80'],
-    ['ninetieth', '90']
+    ['ninetieth', '90'],
+    ['hundredth', '100'],
+    ['thousandth', '1000'],
+    ['millionth', '1000000'],
+    ['billionth', '1000000000'],
+    ['trillionth', '1000000000000']
   ]
 
   def self.numerize(string)
     string = string.dup
 
-    # preprocess
-    #string.gsub!(/ +|([^\d])-([^\d])/, '\1 \2') # will mutilate hyphenated-words
-
     # easy/direct replacements
     (DIRECT_NUMS + SINGLE_NUMS).each do |dn|
       string.gsub!(/(^|\W)#{dn[0]}(?=$|\W)/i, '\1<num>' + dn[1].to_s)
       string.gsub!(/(\d)-<num>/, '\1 <num>')
+
     end
 
     # ten, twenty, etc.
@@ -124,16 +128,17 @@ class Numerizer
         string.gsub!(/(\d)-<num>/, '\1 <num>')
       end
       SINGLE_ORDINALS.each do |dn|
-        string.gsub!(/(^|\W)#{tp[0]}(\s)?#{dn[0]}(?=$|\W)/i, '\1<num>' + (tp[1] + dn[1]).to_s + dn[0][-2, 2])
+        string.gsub!(/(^|\W)#{tp[0]}(\s|-)?#{dn[0]}(?=$|\W)/i, '\1<num>' + (tp[1] + dn[1]).to_s + dn[0][-2, 2])
         string.gsub!(/(\d)-<num>/, '\1 <num>')
       end
+      string.gsub!(/(<num>\d+)[\s-]#{tp[0]}(?=$|\W)/, '\1<num>' + tp[1].to_s)
       string.gsub!(/(^|\W)#{tp[0]}(?=$|\W)/i, '\1<num>' + tp[1].to_s)
     end
 
     # handle fractions
     FRACTIONS.each do |tp|
-      string.gsub!(/a #{tp[0]}(?=$|\W)/i, '<num>1/' + tp[1].to_s)
-      string.gsub!(/[\s|-]#{tp[0]}(?=$|\W)/i, '/' + tp[1].to_s)
+      string.gsub!(/\ba #{tp[0]}(?=$|\W)/i, '<num>1/' + tp[1].to_s)
+      string.gsub!(/(\d)[\s|-]#{tp[0]}(?=$|\W)/i, '\1/' + tp[1].to_s)
     end
 
     (DIRECT_ORDINALS + SINGLE_ORDINALS).each do |on|
@@ -145,7 +150,7 @@ class Numerizer
 
     # hundreds, thousands, millions, etc.
     BIG_PREFIXES.each do |bp|
-      string.gsub!(/(?:<num>)?(\d*) *#{bp[0]}/i) { $1.empty? ? bp[1] : '<num>' + (bp[1] * $1.to_i).to_s }
+      string.gsub!(/(?:<num>|\ba)?(\d*)[\s|-]*#{bp[0]}(?=$|\W)/i) { $1.empty? ? bp[1] : '<num>' + (bp[1] * $1.to_i).to_s }
       andition(string)
     end
 
@@ -158,7 +163,7 @@ class Numerizer
     private
     def andition(string)
       sc = StringScanner.new(string)
-      while(sc.scan_until(/<num>(\d+)( | and )<num>(\d+)(?=[^\w]|$)/i))
+      while(sc.scan_until(/<num>(\d+)([\s-]|[\s-]and[\s-])<num>(\d+)(?=[^\w]|$)/i))
         if sc[2] =~ /and/ || sc[1].size > sc[3].size
           string[(sc.pos - sc.matched_size)..(sc.pos-1)] = '<num>' + (sc[1].to_i + sc[3].to_i).to_s
           sc.reset

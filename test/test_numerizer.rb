@@ -25,7 +25,7 @@ class NumerizerTest < Test::Unit::TestCase
       100 => 'a hundred',
       100 => 'one hundred',
       150 => 'one hundred and fifty',
-      # 150 => 'one fifty',
+      150 => 'one fifty',
       200 => 'two-hundred',
       500 => '5 hundred',
       999 => 'nine hundred and ninety nine',
