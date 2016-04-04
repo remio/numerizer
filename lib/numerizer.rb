@@ -111,7 +111,7 @@ class Numerizer
     ['trillionth', '1000000000000']
   ]
 
-  def self.numerize(string)
+  def self.numerize(string,numerize_ordinals=true)
     string = string.dup
 
     # easy/direct replacements
@@ -127,10 +127,12 @@ class Numerizer
         string.gsub!(/(^|\W)#{tp[0]}#{dn[0]}(?=$|\W)/i, '\1<num>' + (tp[1] + dn[1]).to_s)
         string.gsub!(/(\d)-<num>/, '\1 <num>')
       end
-      # SINGLE_ORDINALS.each do |dn|
-      #   string.gsub!(/(^|\W)#{tp[0]}(\s|-)?#{dn[0]}(?=$|\W)/i, '\1<num>' + (tp[1] + dn[1]).to_s + dn[0][-2, 2])
-      #   string.gsub!(/(\d)-<num>/, '\1 <num>')
-      # end
+      if numerize_ordinals
+        SINGLE_ORDINALS.each do |dn|
+          string.gsub!(/(^|\W)#{tp[0]}(\s|-)?#{dn[0]}(?=$|\W)/i, '\1<num>' + (tp[1] + dn[1]).to_s + dn[0][-2, 2])
+          string.gsub!(/(\d)-<num>/, '\1 <num>')
+        end
+      end
       string.gsub!(/(<num>\d+)[\s-]#{tp[0]}(?=$|\W)/, '\1<num>' + tp[1].to_s)
       string.gsub!(/(^|\W)#{tp[0]}(?=$|\W)/i, '\1<num>' + tp[1].to_s)
     end
@@ -141,9 +143,11 @@ class Numerizer
       string.gsub!(/(\d)[\s|-]#{tp[0]}(?=$|\W)/i, '\1/' + tp[1].to_s)
     end
 
-    # (DIRECT_ORDINALS + SINGLE_ORDINALS).each do |on|
-    #   string.gsub!(/(^|\W)#{on[0]}(?=$|\W)/i, '\1<num>' + on[1].to_s + on[0][-2, 2])
-    # end
+    if numerize_ordinals
+      (DIRECT_ORDINALS + SINGLE_ORDINALS).each do |on|
+        string.gsub!(/(^|\W)#{on[0]}(?=$|\W)/i, '\1<num>' + on[1].to_s + on[0][-2, 2])
+      end
+    end
 
     # evaluate fractions when preceded by another number
     string.gsub!(/(\d+)(?: | and |-)+(<num>|\s)*(\d+)\s*\/\s*(\d+)/i) { ($1.to_f + ($3.to_f/$4.to_f)).to_s }
